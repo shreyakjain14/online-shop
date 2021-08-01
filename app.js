@@ -12,13 +12,14 @@ const multer = require("multer");
 const helmet = require("helmet");
 const compression = require("compression");
 const morgan = require("morgan");
+const { v4: uuidv4 } = require("uuid");
 
 const errorController = require("./controllers/error");
 const shopController = require("./controllers/shop");
 const isAuth = require("./middleware/is-auth");
 const User = require("./models/user");
 
-const MONGODB_URI = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGODB_PASSWORD}@cluster0.kbkbt.mongodb.net/${MONGO_DEFAULT_DATABASE}`;
+const MONGODB_URI = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@cluster0.kbkbt.mongodb.net/${process.env.MONGO_DEFAULT_DATABASE}`;
 
 const app = express();
 const store = new MongoDBStore({
@@ -28,12 +29,12 @@ const store = new MongoDBStore({
 
 const csrfProtection = csrf();
 
-const fileStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
     cb(null, "images");
   },
-  filename: (req, file, cb) => {
-    cb(null, new Date().toISOString() + "-" + file.originalname);
+  filename: function (req, file, cb) {
+    cb(null, uuidv4());
   },
 });
 
@@ -66,9 +67,7 @@ app.use(compression());
 app.use(morgan("combined", { stream: accessLogStream }));
 
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(
-  multer({ storage: fileStorage, fileFilter: fileFilter }).single("image")
-);
+app.use(multer({ storage: storage, fileFilter: fileFilter }).single("image"));
 
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/images", express.static(path.join(__dirname, "images")));
@@ -90,7 +89,6 @@ app.use((req, res, next) => {
 });
 
 app.use((req, res, next) => {
-  // throw new Error('Sync Dummy');
   if (!req.session.user) {
     return next();
   }
@@ -129,7 +127,7 @@ app.use((error, req, res, next) => {
   res.status(500).render("500", {
     pageTitle: "Error!",
     path: "/500",
-    isAuthenticated: req.session.isLoggedIn,
+    isAuthenticated: res.locals.isAuthenticated ? true : false,
   });
 });
 
