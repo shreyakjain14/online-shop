@@ -54,8 +54,7 @@
                     name="description" 
                     id="description" 
                     rows="5"
-                    ><% if(editing || hasError) { %><%= product.description %><% } %>
-                </textarea>
+                    ><% if(editing || hasError) { %><%= product.description %><% } %></textarea>
             </div>
             <% if(editing || hasError) { %>
                 <input type="hidden" value="<%= product._id %>" name="productId">
